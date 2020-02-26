@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { YAxis } from 'react-timeseries-charts';
 import { actions } from './reducer';
 import { Provider, createClient, useQuery } from 'urql';
 import LinearProgress from '@material-ui/core/LinearProgress';
@@ -43,6 +44,7 @@ export default () => {
 const TimeSeriesChart = () => {
   const dispatch = useDispatch();
   const metric = useSelector(({ metrics }: IState) => metrics.selectedMetric);
+  const { measurements } = useSelector(({ measurements} : IState) => measurements);
   const [result] = (useQuery({
     query,
     variables: {
@@ -62,8 +64,9 @@ const TimeSeriesChart = () => {
       return
     };
     if(data) {
+      const measurements = data.getMultipleMeasurements[0].measurements || [];
       const storeObj = {
-        measurements: data.getMultipleMeasurements[0].measurements || []
+        measurements,
       };
       dispatch(actions.measurementsDataRecevied(storeObj));
     }
@@ -71,6 +74,9 @@ const TimeSeriesChart = () => {
 
   if (fetching) {
     console.log(fetching);
+    return <>
+      <YAxis id="axis1" label="AUD" min={0} max={100} width="60" />
+    </>;
   };
   
   return <LinearProgress />;

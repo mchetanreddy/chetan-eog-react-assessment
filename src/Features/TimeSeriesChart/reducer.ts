@@ -1,3 +1,4 @@
+import { TimeSeries } from "pondjs";
 import { createSlice, PayloadAction } from 'redux-starter-kit';
 
 export type Measurements = {
@@ -18,8 +19,15 @@ const slice = createSlice({
   initialState,
   reducers: {
     measurementsDataRecevied: (state, action: PayloadAction<Measurements>) => {
-      const { measurements } = action.payload;
-      state.measurements = measurements;
+      const { measurements = [] } = action.payload;
+      const metricName = (measurements && measurements[0] && measurements[0].metric) || '';
+      const data:any =  new TimeSeries({
+        name: metricName,
+        columns: ["time", "value", "unit"],
+        points: measurements.map((pt:any) => [pt.at, pt.value, pt.unit])
+      });
+
+      state.measurements = data;
     },
     measurementsApiErrorReceived: (state, action: PayloadAction<ApiErrorAction>) => state,
   },
