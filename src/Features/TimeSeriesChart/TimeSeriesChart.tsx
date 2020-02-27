@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { YAxis } from 'react-timeseries-charts';
+import {
+  LineChart, Line, XAxis, YAxis, Label, Tooltip,
+} from 'recharts';
 import { actions } from './reducer';
 import { Provider, createClient, useQuery } from 'urql';
-import LinearProgress from '@material-ui/core/LinearProgress';
+import moment from 'moment';
 import { IState } from '../../store';
 
 const client = createClient({
@@ -26,12 +28,6 @@ query($input: [MeasurementQuery]) {
 const now:any = new Date();
 const timeRangeLimit = now - 30 * 60 * 1000;
 
-const getMetricsValues = (state: IState) => {
-  const { getMetrics } = state.metrics;
-  return {
-    getMetrics
-  };
-};
 
 export default () => {
   return (
@@ -44,7 +40,11 @@ export default () => {
 const TimeSeriesChart = () => {
   const dispatch = useDispatch();
   const metric = useSelector(({ metrics }: IState) => metrics.selectedMetric);
-  const { measurements } = useSelector(({ measurements} : IState) => measurements);
+  const { 
+    measurements,
+    unit,
+   } = useSelector(({ measurements} : IState) => measurements);
+  
   const [result] = (useQuery({
     query,
     variables: {
@@ -67,17 +67,35 @@ const TimeSeriesChart = () => {
       const measurements = data.getMultipleMeasurements[0].measurements || [];
       const storeObj = {
         measurements,
+        metricName: metric,
+        unit: '',
       };
       dispatch(actions.measurementsDataRecevied(storeObj));
     }
-  }, [dispatch, data, error]);
+  }, [dispatch, data, error, metric]);
 
   if (fetching) {
-    console.log(fetching);
     return <>
-      <YAxis id="axis1" label="AUD" min={0} max={100} width="60" />
     </>;
   };
   
-  return <LinearProgress />;
+  return (
+    <LineChart
+      width={1024}
+      height={500}
+      data={measurements}
+      margin={{
+        top: 5, right: 30, left: 20, bottom: 5,
+      }}
+    >
+      <XAxis dataKey="xaxis" tickFormatter={(item) => {
+        return (moment(item).format('h:mm:ss a'))
+      }}>
+        <Label value="Time" position="bottom" offset={-5} />
+      </XAxis>
+      <YAxis label={unit} margin="5"/>
+      <Tooltip />
+      <Line type="monotone" dataKey="yaxis" stroke="#8884d8" activeDot={{ r: 8 }} ticks="5" label="Unit Name"/>
+    </LineChart>
+  );
 };
